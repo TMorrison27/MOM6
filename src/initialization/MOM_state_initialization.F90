@@ -51,6 +51,10 @@ use DOME_initialization, only : DOME_initialize_sponges
 use ISOMIP_initialization, only : ISOMIP_initialize_thickness
 use ISOMIP_initialization, only : ISOMIP_initialize_sponges
 use ISOMIP_initialization, only : ISOMIP_initialize_temperature_salinity
+use Fjord_initialization, only : Fjord_initialize_thickness
+use Fjord_initialization, only : Fjord_initialize_sponges
+use Fjord_initialization, only : Fjord_initialize_temperature_salinity
+use Fjord_initialization, only : Fjord_set_OBC_data
 use baroclinic_zone_initialization, only : baroclinic_zone_init_temperature_salinity
 use benchmark_initialization, only : benchmark_initialize_thickness
 use benchmark_initialization, only : benchmark_init_temperature_salinity
@@ -253,6 +257,7 @@ subroutine MOM_initialize_state(u, v, h, tv, Time, G, GV, PF, dirs, &
              " \t\t DOME sill-overflow test case. \n"//&
              " \t ISOMIP - use a configuration for the \n"//&
              " \t\t ISOMIP test case. \n"//&
+             " \t Fjord - Fjord initialization. \n"//&
              " \t benchmark - use the benchmark test case thicknesses. \n"//&
              " \t Neverland - use the Neverland test case thicknesses. \n"//&
              " \t search - search a density profile for the interface \n"//&
@@ -286,6 +291,8 @@ subroutine MOM_initialize_state(u, v, h, tv, Time, G, GV, PF, dirs, &
        case ("DOME"); call DOME_initialize_thickness(h, G, GV, PF, &
                                just_read_params=just_read)
        case ("ISOMIP"); call ISOMIP_initialize_thickness(h, G, GV, PF, tv, &
+                                 just_read_params=just_read)
+       case ("Fjord"); call Fjord_initialize_thickness(h, G, GV, PF, tv, &
                                  just_read_params=just_read)
        case ("benchmark"); call benchmark_initialize_thickness(h, G, GV, PF, &
                                     tv%eqn_of_state, tv%P_Ref, just_read_params=just_read)
@@ -334,6 +341,7 @@ subroutine MOM_initialize_state(u, v, h, tv, Time, G, GV, PF, dirs, &
              " \t linear - linear in logical layer space. \n"//&
              " \t DOME2D - 2D DOME initialization. \n"//&
              " \t ISOMIP - ISOMIP initialization. \n"//&
+             " \t Fjord - Fjord initialization. \n"//&
              " \t adjustment2d - 2d lock exchange T/S ICs. \n"//&
              " \t sloshing - sloshing mode T/S ICs. \n"//&
              " \t seamount - no motion test with seamount ICs. \n"//&
@@ -358,6 +366,8 @@ subroutine MOM_initialize_state(u, v, h, tv, Time, G, GV, PF, dirs, &
         case ("DOME2D"); call DOME2d_initialize_temperature_salinity ( tv%T, &
                                   tv%S, h, G, GV, PF, eos, just_read_params=just_read)
         case ("ISOMIP"); call ISOMIP_initialize_temperature_salinity ( tv%T, &
+                                  tv%S, h, G, GV, PF, eos, just_read_params=just_read)
+        case ("Fjord"); call Fjord_initialize_temperature_salinity(tv%T, &
                                   tv%S, h, G, GV, PF, eos, just_read_params=just_read)
         case ("adjustment2d"); call adjustment_initialize_temperature_salinity ( tv%T, &
                                         tv%S, h, G, GV, PF, eos, just_read_params=just_read)
@@ -515,6 +525,7 @@ subroutine MOM_initialize_state(u, v, h, tv, Time, G, GV, PF, dirs, &
                  " \t file - read sponge properties from the file \n"//&
                  " \t\t specified by (SPONGE_FILE).\n"//&
                  " \t ISOMIP - apply ale sponge in the ISOMIP case \n"//&
+                 " \t Fjord - apply ale sponge in the Fjord case \n"//&
                  " \t DOME - use a slope and channel configuration for the \n"//&
                  " \t\t DOME sill-overflow test case. \n"//&
                  " \t BFB - Sponge at the southern boundary of the domain\n"//&
@@ -525,6 +536,8 @@ subroutine MOM_initialize_state(u, v, h, tv, Time, G, GV, PF, dirs, &
       case ("DOME2D"); call DOME2d_initialize_sponges(G, GV, tv, PF, useALE, &
                                                       sponge_CSp, ALE_sponge_CSp)
       case ("ISOMIP"); call ISOMIP_initialize_sponges(G, GV, tv, PF, useALE, &
+                                                     sponge_CSp, ALE_sponge_CSp)
+      case ("Fjord"); call Fjord_initialize_sponges(G, GV, tv, PF, useALE, &
                                                      sponge_CSp, ALE_sponge_CSp)
       case ("USER"); call user_initialize_sponges(G, use_temperature, tv, &
                                                PF, sponge_CSp, h)
@@ -552,6 +565,7 @@ subroutine MOM_initialize_state(u, v, h, tv, Time, G, GV, PF, dirs, &
                  "A string that sets how the user code is invoked to set open\n"//&
                  " boundary data: \n"//&
                  "   DOME - specified inflow on northern boundary\n"//&
+                 "   Fjord - Use OBC to make a riverine fjord -- no ice \n"//&
                  "   dyed_channel - supercritical with dye on the inflow boundary\n"//&
                  "   dyed_obcs - circle_obcs with dyes on the open boundaries\n"//&
                  "   Kelvin - barotropic Kelvin wave forcing on the western boundary\n"//&
@@ -561,6 +575,8 @@ subroutine MOM_initialize_state(u, v, h, tv, Time, G, GV, PF, dirs, &
                  "   USER - user specified", default="none")
     if (trim(config) == "DOME") then
       call DOME_set_OBC_data(OBC, tv, G, GV, PF, tracer_Reg)
+    elseif (trim(config) == "Fjord") then
+      call Fjord_set_OBC_data(OBC, tv, G, GV, PF, tracer_Reg)
     elseif (trim(config) == "dyed_channel") then
       call dyed_channel_set_OBC_tracer_data(OBC, G, GV, PF, tracer_Reg)
       OBC%update_OBC = .true.

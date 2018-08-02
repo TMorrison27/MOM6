@@ -29,6 +29,7 @@ use MOM_shared_initialization, only : compute_global_grid_integrals, write_ocean
 use user_initialization, only : user_initialize_topography
 use DOME_initialization, only : DOME_initialize_topography
 use ISOMIP_initialization, only : ISOMIP_initialize_topography
+use Fjord_initialization, only : Fjord_initialize_topography
 use benchmark_initialization, only : benchmark_initialize_topography
 use Neverland_initialization, only : Neverland_initialize_topography
 use DOME2d_initialization, only : DOME2d_initialize_topography
@@ -198,6 +199,7 @@ subroutine MOM_initialize_topography(D, max_depth, G, PF)
                  " \t\t DOME sill-overflow test case. \n"//&
                  " \t ISOMIP - use a slope and channel configuration for the \n"//&
                  " \t\t ISOMIP test case. \n"//&
+                 " \t Fjord - use a idealized box fjord and linear slope \n"//&
                  " \t DOME2D - use a shelf and slope configuration for the \n"//&
                  " \t\t DOME2D gravity current/overflow test case. \n"//&
                  " \t Kelvin - flat but with rotated land mask.\n"//&
@@ -218,6 +220,7 @@ subroutine MOM_initialize_topography(D, max_depth, G, PF)
     case ("halfpipe");  call initialize_topography_named(D, G, PF, config, max_depth)
     case ("DOME");      call DOME_initialize_topography(D, G, PF, max_depth)
     case ("ISOMIP");    call ISOMIP_initialize_topography(D, G, PF, max_depth)
+    case ("Fjord");     call Fjord_initialize_topography(D, G, PF, max_depth)
     case ("benchmark"); call benchmark_initialize_topography(D, G, PF, max_depth)
     case ("Neverland"); call Neverland_initialize_topography(D, G, PF, max_depth)
     case ("DOME2D");    call DOME2d_initialize_topography(D, G, PF, max_depth)
